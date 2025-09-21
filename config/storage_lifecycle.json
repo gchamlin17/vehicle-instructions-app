@@ -1,0 +1,7 @@
+# Example Storage lifecycle (JSON for gcloud) ? NOT applied automatically
+{
+  "rule": [
+    { "action": {"type": "SetStorageClass", "storageClass": "NEARLINE"}, "condition": {"age": 30}},
+    { "action": {"type": "Delete"}, "condition": {"age": 365}}
+  ]
+}

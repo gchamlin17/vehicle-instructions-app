@@ -1,0 +1,7 @@
+﻿{
+  "vehicle": "honda/cr-v/2020/ex",
+  "clips": [
+    {"id":"tpms-reset","title":"Reset TPMS","file":"tpms-reset.mp4","captions":"tpms-reset.vtt"},
+    {"id":"pair-bluetooth","title":"Pair Bluetooth","file":"pair-bluetooth.mp4","captions":"pair-bluetooth.vtt"}
+  ]
+}

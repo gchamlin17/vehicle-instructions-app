@@ -1,0 +1,35 @@
+import React from 'react';
+import { View, Text, Button } from 'react-native';
+import { Video } from 'expo-av';
+
+export default function VehicleDetailScreen({ route }) {
+  const { vehicleId, videoUrl } = route.params;
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 20, marginBottom: 20 }}>
+        {vehicleId} Instructions
+      </Text>
+
+      {/* Button to trigger playback */}
+      <Button
+        title="Play Instruction Video"
+        onPress={() => {
+          // later this will navigate to a video player screen
+          console.log("Play video:", videoUrl);
+        }}
+      />
+
+      {/* Placeholder video player */}
+      <Video
+        source={{ uri: videoUrl }}
+        rate={1.0}
+        volume={1.0}
+        isMuted={false}
+        resizeMode="contain"
+        shouldPlay={false}
+        style={{ width: 320, height: 200, marginTop: 20 }}
+      />
+    </View>
+  );
+}

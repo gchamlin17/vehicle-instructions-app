@@ -1,0 +1,5 @@
+# Example: make a CSV row for camry-2025
+.\scripts\make_csv_from_folder.ps1 `
+  -VehicleId "camry-2025" `
+  -PdfPath "C:\Users\gregc\vi-clean\sample_manual.pdf" `
+  -ImagesDir "C:\Users\gregc\Pictures\camry"

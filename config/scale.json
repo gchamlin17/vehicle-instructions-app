@@ -1,0 +1,13 @@
+{
+  "orgId": "household:test",
+  "vehicles": [
+    "honda/cr-v/2020/ex",
+    "toyota/camry/2020/le",
+    "ford/f-150/2021/xlt",
+    "chevrolet/silverado/2021/lt",
+    "nissan/rogue/2019/sl",
+    "hyundai/sonata/2022/sel"
+  ],
+  "clipsPerVehicle": 3,
+  "servePort": 5173
+}

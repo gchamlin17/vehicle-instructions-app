@@ -1,0 +1,17 @@
+// mobile/App.tsx (or your navigator file)
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import VehiclesScreen from "./src/screens/VehiclesScreen";
+import VehicleDetailScreen from "./src/screens/VehicleDetailScreen";
+
+const Stack = createNativeStackNavigator();
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Vehicles" component={VehiclesScreen} />
+        <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

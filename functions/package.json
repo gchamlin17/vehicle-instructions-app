@@ -1,0 +1,13 @@
+{
+    "name":  "vi-functions",
+    "private":  true,
+    "main":  "index.js",
+    "engines":  {
+                    "node":  "20"
+                },
+    "dependencies":  {
+                         "firebase-functions":  "^5.1.0",
+                         "firebase-admin":  "^12.5.0",
+                         "@google-cloud/pubsub":  "^4.7.2"
+                     }
+}

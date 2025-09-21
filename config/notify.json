@@ -1,0 +1,4 @@
+{
+  "slack_webhook": "",        // paste Slack Incoming Webhook URL here (optional)
+  "toast_enabled": true       // requires BurntToast module; we will install if missing
+}

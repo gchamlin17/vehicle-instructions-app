@@ -1,0 +1,35 @@
+// mobile/src/screens/VehiclesScreen.tsx
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import { db } from "../lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
+
+export default function VehiclesScreen({ navigation }: any) {
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const snap = await getDocs(collection(db, "vehicles"));
+      setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    })();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, padding: 16 }}>
+      <Text style={{ fontSize: 22, fontWeight: "600", marginBottom: 10 }}>Vehicles</Text>
+      <FlatList
+        data={items}
+        keyExtractor={i => i.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={{ padding: 14, borderWidth: 1, borderRadius: 12, marginBottom: 10 }}
+            onPress={() => navigation.navigate("VehicleDetail", { id: item.id })}
+          >
+            <Text style={{ fontSize: 18, fontWeight: "600" }}>{item.name ?? item.id}</Text>
+            <Text numberOfLines={1} style={{ color: "#666" }}>{item.description ?? "—"}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
+  );
+}

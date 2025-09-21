@@ -1,0 +1,7 @@
+﻿rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /vehicles/{docId} { allow read: if true; allow write: if false; }
+    match /oem_videos/{make}/videos/{videoId} { allow read: if true; allow write: if false; }
+  }
+}

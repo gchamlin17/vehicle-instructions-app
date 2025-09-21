@@ -1,0 +1,13 @@
+﻿rules:
+  - when: "seed firestore"
+    run: "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy\\seed-firestore.ps1"
+  - when: "deploy functions"
+    run: "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy\\deploy-functions.ps1"
+  - when: "build app"
+    run: "powershell -NoProfile -ExecutionPolicy Bypass -File .\\assemble.ps1"
+  - when: "publish release bundle"
+    run: "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy\\publish.ps1"
+  - when: "add smoke tests"
+    run: "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy\\run-smoke-tests.ps1"
+  - when: "configure failure notifications"
+    run: "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy\\notify-setup.ps1"

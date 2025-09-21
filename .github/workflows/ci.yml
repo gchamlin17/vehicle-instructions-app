@@ -1,0 +1,33 @@
+name: vi-ci
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+jobs:
+  build-test-deploy:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install Functions deps
+        run: |
+          cd functions
+          npm ci || (del /q /f package-lock.json && npm install --legacy-peer-deps)
+      - name: Build Frontend (if present)
+        run: |
+          if exist app\package.json (
+            cd app
+            npm ci || (del /q /f package-lock.json && npm install --legacy-peer-deps)
+            npx expo export --platform web --output-dir web-dist || npm run build
+          )
+      - name: Firebase Deploy (Functions + Rules + Hosting)
+        if: github.ref == 'refs/heads/main'
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          npm i -g firebase-tools
+          firebase deploy --only firestore:rules
+          firebase deploy --only storage
+          firebase deploy --only functions
+          if exist app\web-dist firebase deploy --only hosting

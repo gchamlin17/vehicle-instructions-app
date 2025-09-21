@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function devUntil() { return request.time < timestamp.date(2025, 8, 20); }
+    // Public read; writes allowed during dev window
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if devUntil();
+    }
+  }
+}

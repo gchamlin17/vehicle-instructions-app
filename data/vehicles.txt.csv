@@ -1,0 +1,4 @@
+@'
+vehicleId,pdf,image
+demo-car,C:\Users\gregc\vi-clean\sample_manual.pdf,C:\Users\gregc\vi-clean\sample_dashboard.jpg
+'@ | Set-Content -Encoding UTF8 "C:\Users\gregc\vi-clean\data\vehicles.csv"

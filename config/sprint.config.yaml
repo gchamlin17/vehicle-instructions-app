@@ -1,0 +1,5 @@
+﻿defaultOrgId: "household:test"
+region: "us-central1"
+video:
+  cdnCacheSeconds: 300
+  preferSignedUrls: false

@@ -1,0 +1,6 @@
+{
+  "remaining_runs": 1000000,
+  "cooldown_minutes": 0,
+  "last_run_end": 0,
+  "default_queue_mode": "FIFO"
+}

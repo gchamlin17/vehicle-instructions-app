@@ -1,0 +1,3 @@
+vehicleId,pdf,image
+camry-2025,C:\Users\gregc\vi-clean\sample_manual.pdf,C:\Users\gregc\vi-clean\sample_dashboard.jpg
+rav4-2025,C:\Users\gregc\manuals\rav4.pdf,C:\Users\gregc\images\rav4.jpg

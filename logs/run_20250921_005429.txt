@@ -1,0 +1,157 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20250921005429
+Username: LAPTOP-HAAB7HA1\gregc
+RunAs User: LAPTOP-HAAB7HA1\gregc
+Configuration Name: 
+Machine: LAPTOP-HAAB7HA1 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 12636
+PSVersion: 5.1.26100.6584
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.6584
+BuildVersion: 10.0.26100.6584
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\gregc\vi-clean\logs\run_20250921_005429.txt
+**********************
+Command start time: 20250921005429
+**********************
+PS C:\Users\gregc\vi-clean> # Hardening: ensure clean install if CI fails
+**********************
+Command start time: 20250921005429
+**********************
+PS C:\Users\gregc\vi-clean> $env:NPM_CMD = (Get-Command npm.cmd -ErrorAction SilentlyContinue)?.Source
+At line:1 char:67
++ ... NPM_CMD = (Get-Command npm.cmd -ErrorAction SilentlyContinue)?.Source
++                                                                  ~~~~~~~~
+Unexpected token '?.Source' in expression or statement.
+At line:1 char:67
++ ... NPM_CMD = (Get-Command npm.cmd -ErrorAction SilentlyContinue)?.Source
++                                                                  ~~~~~~~~
+Unexpected token '?.Source' in expression or statement.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedToken
+
+**********************
+Command start time: 20250921005429
+**********************
+PS C:\Users\gregc\vi-clean> if (-not $env:NPM_CMD) { $env:NPM_CMD = "$env:ProgramFiles\nodejs\npm.cmd" }
+**********************
+Command start time: 20250921005429
+**********************
+PS C:\Users\gregc\vi-clean> . .\scripts\lib\Invoke-Npm.ps1
+Unknown command: "# Write a function-based helper (safe to dot-source)"
+
+To see a list of supported npm commands, run:
+  npm help
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> TerminatingError(): "npm failed (# Write a function-based helper (safe to dot-source) @' function Invoke-Npm {   param([Parameter(Mandatory=$true)][string[]]$Args))"
+>> TerminatingError(): "npm failed (# Write a function-based helper (safe to dot-source) @' function Invoke-Npm {   param([Parameter(Mandatory=$true)][string[]]$Args))"
+npm failed (# Write a function-based helper (safe to dot-source) @' function Invoke-Npm {   param([Parameter(Mandatory=$true)][string[]]$Args))
+npm failed (# Write a function-based helper (safe to dot-source) @' function Invoke-Npm {
+param([Parameter(Mandatory=$true)][string[]]$Args))
+At C:\Users\gregc\vi-clean\scripts\lib\Invoke-Npm.ps1:6 char:28
++ if ($LASTEXITCODE -ne 0) { throw "npm failed ($($Args -join ' '))" }
++                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (npm failed (# W...tring[]]$Args)):String) [], RuntimeException
+    + FullyQualifiedErrorId : npm failed (# Write a function-based helper (safe to dot-source) @' function Invoke-Npm
+   {   param([Parameter(Mandatory=$true)][string[]]$Args))
+
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> Write-Host "=== Assemble Frontend ===" -ForegroundColor Cyan
+=== Assemble Frontend ===
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> $App = Join-Path $PWD "app"
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> if (-not (Test-Path $App)) { throw "App folder not found: $App" }
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> Push-Location $App
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean\app> try {
+  try {
+    Invoke-Npm @("ci","--no-audit","--no-fund","--silent")
+  } catch {
+    Write-Warning "ci failed → falling back to clean install"
+    if (Test-Path .\node_modules) { Remove-Item .\node_modules -Recurse -Force }
+    if (Test-Path .\package-lock.json) { Remove-Item .\package-lock.json -Force }
+    Invoke-Npm @("install","--no-audit","--no-fund","--silent","--legacy-peer-deps")
+  }
+
+  # Build a static web bundle to app\web-dist (Expo web export uses --output-dir)
+  if (-not (Get-Command npx.cmd -ErrorAction SilentlyContinue)) { throw "npx not found (node install?)" }
+  & npx.cmd expo export --platform web --output-dir ./web-dist 2>&1
+  if ($LASTEXITCODE -ne 0) { throw "expo export failed" }
+
+  # Serve locally for preview (http://localhost:5173)
+  # Uses "serve" if present; otherwise dev server.
+  $served = $false
+  if (Test-Path .\node_modules\.bin\serve.cmd) {
+    Start-Process -FilePath .\node_modules\.bin\serve.cmd -ArgumentList " -s web-dist -l 5173" -WindowStyle Hidden
+    $served = $true
+  } else {
+    Invoke-Npm @("install","serve","--no-audit","--no-fund","--silent")
+    Start-Process -FilePath .\node_modules\.bin\serve.cmd -ArgumentList " -s web-dist -l 5173" -WindowStyle Hidden
+    $served = $true
+  }
+  if ($served) {
+    Start-Sleep -Seconds 3
+    Start-Process "http://localhost:5173"
+    Write-Host "UI up at http://localhost:5173" -ForegroundColor Green
+  }
+} finally { Pop-Location }
+WARNING: ci failed → falling back to clean install
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean\app> TerminatingError(): "The term 'Invoke-Npm' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again."
+The term 'Invoke-Npm' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+Invoke-Npm : The term 'Invoke-Npm' is not recognized as the name of a cmdlet, function, script file, or operable
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:8 char:5
++     Invoke-Npm @("install","--no-audit","--no-fund","--silent","--leg ...
++     ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Invoke-Npm:String) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> # Deploy functions again (safe/no-op if unchanged)
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> Write-Host "=== Deploy Functions (safe) ===" -ForegroundColor Cyan
+=== Deploy Functions (safe) ===
+**********************
+Command start time: 20250921005810
+**********************
+PS C:\Users\gregc\vi-clean> if (-not (Get-Command firebase -ErrorAction SilentlyContinue)) {
+  Write-Warning "Firebase CLI not found; skipping functions deploy"
+} else {
+  firebase deploy --only functions --non-interactive
+}
+
+**********************
+Command start time: 20250921005824
+**********************
+PS C:\Users\gregc\vi-clean> Stop-Transcript
+**********************
+Windows PowerShell transcript end
+End time: 20250921005824
+**********************

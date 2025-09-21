@@ -1,0 +1,8 @@
+﻿[
+  {
+    "origin": ["http://localhost:8080","http://localhost:8085","http://localhost:8086"],
+    "method": ["GET","HEAD","OPTIONS"],
+    "responseHeader": ["Content-Type","x-goog-meta-*","x-goog-stored-content-type","x-goog-stored-content-encoding","x-goog-generation","x-goog-metageneration","x-goog-hash","x-goog-storage-class","x-goog-stored-content-length","x-goog-stored-content-md5","x-goog-component-count","x-goog-object-version-id","Accept","Range"],
+    "maxAgeSeconds": 3600
+  }
+]

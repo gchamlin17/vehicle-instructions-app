@@ -1,0 +1,340 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { SafeAreaView, View, Text, Button, FlatList, TouchableOpacity, Modal, ScrollView, TextInput, Alert } from "react-native";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import {
+  getFirestore, collection, getDocs, addDoc, query, where, deleteDoc, doc, setDoc, updateDoc
+} from "firebase/firestore";
+import YoutubeIframe from "react-native-youtube-iframe";
+import { app } from "./src/firebase";
+
+type Vehicle = { id: string; year: number; make: string; model?: string; type?: string };
+type Item = { id: string; title: string; feature: string; youtubeId?: string; vehicleRef?: { year: number; make: string; model?: string } };
+
+const Chip = ({ label, selected, onPress }:{
+  label: string; selected: boolean; onPress: () => void;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={{
+      paddingVertical: 6, paddingHorizontal: 10,
+      borderWidth: 1, borderColor: selected ? "#0366d6" : "#ccc",
+      borderRadius: 14, backgroundColor: selected ? "#e8f0fe" : "#fff",
+      marginRight: 8, marginBottom: 8
+    }}
+  >
+    <Text style={{ color: selected ? "#0366d6" : "#333" }}>{label}</Text>
+  </TouchableOpacity>
+);
+
+// Extract 11-char YouTube ID from a full URL or return the input if it already looks like an ID
+const extractYoutubeId = (input: string): string | null => {
+  if (!input) return null;
+  const trimmed = input.trim();
+  const idPattern = /^[a-zA-Z0-9_-]{11}$/;
+  if (idPattern.test(trimmed)) return trimmed;
+  const m = trimmed.match(/(?:v=|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+};
+
+export default function App() {
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const [uid, setUid] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+
+  const [selYear, setSelYear] = useState<number | undefined>(undefined);
+  const [selMake, setSelMake] = useState<string | undefined>(undefined);
+
+  // Item details + YouTube input
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [ytInput, setYtInput] = useState<string>("");
+  const [savingYT, setSavingYT] = useState(false);
+
+  // Vehicle details modal
+  const [vehOpen, setVehOpen] = useState(false);
+  const [vehItems, setVehItems] = useState<Item[]>([]);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (!u) { await signInAnonymously(auth); return; }
+      setUid(u.uid);
+      await Promise.all([loadVehicles(), loadItems()]);
+    });
+    return unsub;
+  }, []);
+
+  const loadVehicles = async () => {
+    const snap = await getDocs(collection(db, "vehicles"));
+    setVehicles(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })));
+  };
+
+  const loadItems = async () => {
+    setLoading(true);
+    let qy: any = query(collection(db, "contentItems"), where("visibility", "==", "public"));
+    if (selYear) qy = query(qy, where("vehicleRef.year", "==", selYear));
+    if (selMake) qy = query(qy, where("vehicleRef.make", "==", selMake));
+    const snap = await getDocs(qy);
+    setItems(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })));
+    setLoading(false);
+  };
+
+  useEffect(() => { loadItems(); }, [selYear, selMake]);
+
+  const years = useMemo(() => [...new Set(vehicles.map(v => v.year))].sort((a,b)=>b-a), [vehicles]);
+  const makes = useMemo(() => [...new Set(vehicles.map(v => v.make))].sort(), [vehicles]);
+
+  const pickVehicle = (): Vehicle | undefined =>
+    vehicles.find(v => (selYear ? v.year === selYear : true) && (selMake ? v.make === selMake : true));
+
+  // Seeds
+  const seedVehicles = async () => {
+    const list: Omit<Vehicle,"id">[] = [
+      { year: 2021, make: "Honda", model: "Civic", type: "compact" },
+      { year: 2021, make: "Honda", model: "CR-V", type: "suv" },
+      { year: 2020, make: "Ford", model: "F-150", type: "truck" },
+      { year: 2021, make: "Toyota", model: "Camry", type: "midsize" },
+      { year: 2020, make: "Toyota", model: "RAV4", type: "suv" },
+      { year: 2022, make: "Hyundai", model: "Elantra", type: "compact" },
+      { year: 2019, make: "Subaru", model: "Outback", type: "suv" },
+      { year: 2022, make: "Nissan", model: "Rogue", type: "suv" },
+      { year: 2021, make: "Chevrolet", model: "Silverado", type: "truck" },
+      { year: 2021, make: "Tesla", model: "Model 3", type: "sedan" },
+      { year: 2020, make: "Jeep", model: "Wrangler", type: "suv" },
+      { year: 2018, make: "Toyota", model: "Corolla", type: "compact" },
+    ];
+    const safeId = (v: Omit<Vehicle,"id">) => `${v.make}_${(v.model||"x").replace(/\s+/g,"")}_${v.year}`.toLowerCase();
+    for (const v of list) await setDoc(doc(db, "vehicles", safeId(v)), v, { merge: true });
+    await loadVehicles();
+  };
+
+  const addSampleItem = async () => {
+    const v = pickVehicle();
+    await addDoc(collection(db, "contentItems"), {
+      title: "How to pair Bluetooth",
+      feature: "Bluetooth",
+      type: "video",
+      visibility: "public",
+      youtubeId: null,
+      vehicleRef: v ? { year: v.year, make: v.make, model: v.model ?? null } : null,
+      createdAt: Date.now()
+    });
+    await loadItems();
+  };
+
+  const seedFiveItems = async () => {
+    const v = pickVehicle();
+    const templates = [
+      { title: "How to pair Bluetooth", feature: "Bluetooth", youtubeId: "dQw4w9WgXcQ" },
+      { title: "Use CarPlay", feature: "CarPlay", youtubeId: null },
+      { title: "Change clock time", feature: "Clock", youtubeId: null },
+      { title: "Open fuel door", feature: "Fuel Door", youtubeId: null },
+      { title: "Reset maintenance light", feature: "Maintenance", youtubeId: null },
+    ];
+    for (const t of templates) {
+      await addDoc(collection(db, "contentItems"), {
+        ...t, type: "video", visibility: "public",
+        vehicleRef: v ? { year: v.year, make: v.make, model: v.model ?? null } : null,
+        createdAt: Date.now()
+      });
+    }
+    await loadItems();
+  };
+
+  const clearAllItems = async () => {
+    const snap = await getDocs(collection(db, "contentItems"));
+    await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "contentItems", d.id))));
+    await loadItems();
+  };
+
+  // Vehicle details modal
+  const [vehItemsLoading, setVehItemsLoading] = useState(false);
+  const openVehicleDetails = async () => {
+    const v = pickVehicle();
+    if (!v) return;
+    setVehOpen(true);
+    setVehItemsLoading(true);
+    try {
+      const qy = query(
+        collection(db, "contentItems"),
+        where("visibility","==","public"),
+        where("vehicleRef.year","==", v.year),
+        where("vehicleRef.make","==", v.make)
+      );
+      const snap = await getDocs(qy);
+      setVehItems(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })));
+    } catch (e:any) {
+      console.log("Vehicle details query error:", e?.message || e);
+      setVehItems([]);
+    } finally {
+      setVehItemsLoading(false);
+    }
+  };
+
+  const addForThisVehicle = async () => {
+    const v = pickVehicle();
+    if (!v) return;
+    await addDoc(collection(db, "contentItems"), {
+      title: "Quick Tip: Pair a phone",
+      feature: "Bluetooth",
+      type: "video",
+      visibility: "public",
+      youtubeId: null,
+      vehicleRef: { year: v.year, make: v.make, model: v.model ?? null },
+      createdAt: Date.now()
+    });
+    await openVehicleDetails();
+    await loadItems();
+  };
+
+  // Save YouTube id for selected item
+  const saveYoutubeId = async () => {
+    if (!selectedItem) return;
+    const id = extractYoutubeId(ytInput);
+    if (!id) return Alert.alert("Invalid YouTube", "Paste a full YouTube URL or a valid 11-character ID.");
+    try {
+      setSavingYT(true);
+      await updateDoc(doc(db, "contentItems", selectedItem.id), { youtubeId: id });
+      setSelectedItem({ ...selectedItem, youtubeId: id });
+      // also update list rows without a hard refetch
+      setItems(prev => prev.map(it => it.id === selectedItem.id ? { ...it, youtubeId: id } : it));
+    } catch (e:any) {
+      Alert.alert("Save failed", e?.message || String(e));
+    } finally {
+      setSavingYT(false);
+    }
+  };
+
+  const ItemRow = ({ item }: { item: Item }) => (
+    <TouchableOpacity
+      onPress={() => { setSelectedItem(item); setYtInput(item.youtubeId ?? ""); }}
+      style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: "#eee" }}
+    >
+      <Text style={{ fontWeight: "700" }}>{item.title}</Text>
+      <Text style={{ color: "#666" }}>
+        {item.feature} ? {item?.vehicleRef?.make ?? "?"} {item?.vehicleRef?.year ?? ""}
+      </Text>
+      {!!item.youtubeId && <Text style={{ marginTop: 2, color: "#0a7" }}>? YouTube linked</Text>}
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <Text style={{ fontSize: 20, fontWeight: "700" }}>Vehicle Instructions ? MVP</Text>
+        <Text style={{ marginTop: 6, marginBottom: 10 }}>
+          Signed in: {(uid ?? "anon").slice(0,8)} ? Vehicles: {vehicles.length} ? Items: {items.length}{loading ? " (loading?)" : ""}
+        </Text>
+
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+          <Button title="RELOAD" onPress={loadItems} />
+          <Button title="ADD SAMPLE ITEM" onPress={addSampleItem} />
+          <Button title="SEED 5 ITEMS" onPress={seedFiveItems} />
+          <Button title="SEED VEHICLES" onPress={seedVehicles} />
+          <Button title="CLEAR ALL" color="#c3352b" onPress={clearAllItems} />
+        </View>
+
+        <Text style={{ fontWeight: "600", marginTop: 6 }}>Filter by Year</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+          {years.map(y => (
+            <Chip key={y} label={String(y)} selected={selYear === y}
+              onPress={() => setSelYear(selYear === y ? undefined : y)} />
+          ))}
+        </View>
+
+        <Text style={{ fontWeight: "600" }}>Filter by Make</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+          {makes.map(m => (
+            <Chip key={m} label={m} selected={selMake === m}
+              onPress={() => setSelMake(selMake === m ? undefined : m)} />
+          ))}
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+          <Button
+            title="VEHICLE DETAILS"
+            onPress={openVehicleDetails}
+            disabled={!selYear || !selMake}
+          />
+        </View>
+
+        <FlatList data={items} keyExtractor={(it) => it.id} renderItem={ItemRow} />
+      </ScrollView>
+
+      {/* Item details with YouTube */}
+      <Modal visible={!!selectedItem} animationType="slide" onRequestClose={() => setSelectedItem(null)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700" }}>{selectedItem?.title}</Text>
+          <Text style={{ marginTop: 4, color: "#666" }}>
+            {selectedItem?.feature} ? {selectedItem?.vehicleRef?.make ?? "?"} {selectedItem?.vehicleRef?.year ?? ""}
+          </Text>
+
+          {selectedItem?.youtubeId ? (
+            <View style={{ marginTop: 12 }}>
+              <YoutubeIframe height={230} play={false} videoId={selectedItem.youtubeId} />
+            </View>
+          ) : (
+            <Text style={{ marginTop: 12, color: "#888" }}>No video linked yet.</Text>
+          )}
+
+          <View style={{ marginTop: 12 }}>
+            <Text style={{ fontWeight: "600", marginBottom: 6 }}>YouTube URL or ID</Text>
+            <TextInput
+              value={ytInput}
+              onChangeText={setYtInput}
+              placeholder="https://youtu.be/? or 11-char ID"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 10 }}
+            />
+            <View style={{ marginTop: 8 }}>
+              <Button title={savingYT ? "Saving?" : "Save YouTube ID"} onPress={saveYoutubeId} disabled={savingYT} />
+            </View>
+            <View style={{ marginTop: 8 }}>
+              <Button title="Close" onPress={() => setSelectedItem(null)} />
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Vehicle details modal */}
+      <Modal visible={vehOpen} animationType="slide" onRequestClose={() => setVehOpen(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
+          {(() => {
+            const v = pickVehicle();
+            return (
+              <>
+                <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                  {v ? `${v.make} ${v.model ?? ""} ${v.year}` : "No vehicle selected"}
+                </Text>
+                {!!v && <Text style={{ marginTop: 4, color: "#666" }}>Type: {v.type ?? "?"}</Text>}
+
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+                  <Button title="Add Item for this Vehicle" onPress={addForThisVehicle} />
+                  <Button title="Close" onPress={() => setVehOpen(false)} />
+                </View>
+
+                <Text style={{ marginTop: 16, fontWeight: "600" }}>
+                  Content for this vehicle {vehItemsLoading ? "(loading?)" : `(${vehItems.length})`}
+                </Text>
+                <FlatList
+                  data={vehItems}
+                  keyExtractor={(it) => it.id}
+                  renderItem={({ item }) => (
+                    <View style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: "#eee" }}>
+                      <Text style={{ fontWeight: "700" }}>{item.title}</Text>
+                      <Text style={{ color: "#666" }}>{item.feature}{item.youtubeId ? " ? ?" : ""}</Text>
+                    </View>
+                  )}
+                />
+              </>
+            );
+          })()}
+        </SafeAreaView>
+      </Modal>
+    </SafeAreaView>
+  );
+}

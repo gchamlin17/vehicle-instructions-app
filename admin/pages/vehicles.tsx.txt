@@ -1,0 +1,33 @@
+// admin/pages/vehicles.tsx
+import { db } from "../lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+export default function Vehicles() {
+  const [rows, setRows] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const snap = await getDocs(collection(db, "vehicles"));
+      setRows(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    })();
+  }, []);
+
+  return (
+    <main style={{ padding: 24 }}>
+      <h1>Vehicles</h1>
+      <div style={{ display: "grid", gap: 12 }}>
+        {rows.map(v => (
+          <div key={v.id} style={{ border: "1px solid #ddd", borderRadius: 10, padding: 16 }}>
+            <h3>{v.name ?? v.id}</h3>
+            <div style={{ display: "flex", gap: 8 }}>
+              {v.videoUrl ? <a href={v.videoUrl} target="_blank">Open Video</a> : <span>—</span>}
+              <Link href={`/vehicles/${v.id}`}>Details</Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
