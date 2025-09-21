@@ -14,3 +14,16 @@ dist/
 agent_runs/
 .firebase/
 *.log
+# secrets
+.env
+*.env
+*service-account*.json
+*credentials*.json
+*.key
+*.pem
+serviceAccount.json
+keys/
+# any env-from-keys helpers should never contain secrets
+*env.from-keys*.ps1
+# binaries
+ffmpeg/
