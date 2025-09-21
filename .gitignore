@@ -1,66 +1,16 @@
-# Vehicle Instructions App
-
-Infra + scripts to ingest OEM/dealer videos, write per-vehicle manifests, and deploy a static UI with Firebase.
-
-## Quick start
-```ps1
-# Build + deploy + seed demo + open UI
-powershell -NoProfile -ExecutionPolicy Bypass -File .\RUN_PUSH06.ps1
-# initialize and set hooks folder
-git init
-git config core.hooksPath .githooks
-
-# add everything we generated and commit
-git add -A
-git commit -m "chore: bootstrap repo, hooks, CI, ingest spec"
-# replace with your real GitHub URL
-git remote add origin https://github.com/gchamlin17/vehicle-instructions-app.git
-git branch -M main
-git push -u origin main
-# validate all manifests locally (pre-commit equivalent)
-powershell -NoProfile -ExecutionPolicy Bypass -File .\RUN_PRECOMMIT_LOCAL.ps1
-
-# run the big batch (build ? deploy ? seed ?12 ? parallel ingest ? verify ? smoke ? agent)
-powershell -NoProfile -ExecutionPolicy Bypass -File .\RUN_PUSH06.ps1
-
-# when you?re happy, commit & push to kick CI again
-git add -A
-git commit -m "feat: seeded fleet x12, manifests verified"
-git push
-# from C:\Users\gregc\vi-clean
-git init
-git config core.hooksPath .githooks
-git add -A
-git commit -m "chore: bootstrap repo, hooks, CI, ingest spec"
-
-# replace with your actual repo URL
-git remote add origin https://github.com/<YOUR-USER>/vehicle-instructions-app.git
-git branch -M main
-git push -u origin main
-@'
-param(
-  [string]$RepoUrl = ""
-)
-$ErrorActionPreference = "Stop"
-Set-Location $PSScriptRoot
-
-function Say($m,$c="Cyan"){ $fc=$Host.UI.RawUI.ForegroundColor; $Host.UI.RawUI.ForegroundColor=$c; Write-Host $m; $Host.UI.RawUI.ForegroundColor=$fc }
-
-# 0) Require Git
-$git = Get-Command git -ErrorAction SilentlyContinue
-if (-not $git) {
-  Say "Git not found. Install with:  winget install --id Git.Git -e" "Yellow"
-  throw "Please install Git and re-run."
-}
-
-# 1) Minimal hygiene files (only if missing)
-if (!(Test-Path .\.gitignore)) {
-  @'
+# secrets
+.env
+*.env
+*service-account*.json
+*credentials*.json
+*.key
+*.pem
+# local tools/binaries
+ffmpeg/
+# build junk
 node_modules/
 app/web-dist/
 dist/
-.env
-.vscode/
 agent_runs/
 .firebase/
 *.log
